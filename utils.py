@@ -1,7 +1,34 @@
 import os
 import pandas as pd
-# Hypothetical library imports - we'll use a generic approach
-# for the prompt engineering to make it adaptable.
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+def call_llm(api_key, model_name, system_prompt, human_prompt, history=None):
+    """
+    Performs a real API call to the UF IT enterprise endpoint using LangChain.
+    Supports a rolling history of messages.
+    """
+    try:
+        chat = ChatOpenAI(
+            openai_api_key=api_key,
+            openai_api_base="https://api.ai.it.ufl.edu",
+            model=model_name,
+            temperature=0.1
+        )
+        
+        messages = [SystemMessage(content=system_prompt)]
+        
+        # Add history if provided (expected as list of SystemMessage/HumanMessage/AIMessage)
+        if history:
+            messages.extend(history)
+            
+        # Add the current human prompt
+        messages.append(HumanMessage(content=human_prompt))
+        
+        response = chat.invoke(messages)
+        return response.content
+    except Exception as e:
+        return f"Error calling LLM: {str(e)}"
 
 def generate_impact_prompt(data):
     """

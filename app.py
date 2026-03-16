@@ -1,8 +1,7 @@
-import streamlit as st
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from langchain_core.messages import HumanMessage, AIMessage
 import utils
 
 # Page configuration
@@ -22,8 +21,8 @@ Perfect for reporting to leadership and stakeholders.
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("🔑 Agent Credentials")
-    api_key_1 = st.text_input("Agent 1 API Key (Narrative)", type="password", help="Used to analyze data and write the core narrative.")
-    api_key_2 = st.text_input("Agent 2 API Key (Deliverables)", type="password", help="Used to transform the narrative into custom outputs. Can be same as Agent 1.")
+    api_key_1 = st.text_input("Agent 1 API Key", type="password", help="Hardcoded to gpt-oss-20b for data analysis.")
+    api_key_2 = st.text_input("Agent 2 API Key", type="password", help="Hardcoded to gpt-oss-120b for deliverables. Can be same as Agent 1.")
     
     st.divider()
     uploaded_file = st.file_uploader("Upload your data (CSV)", type="csv")
@@ -90,21 +89,29 @@ if data is not None:
     st.divider()
     st.header("🤖 Multi-Model Agent Chain")
     
-    # Initialize session state for the narrative
+    # Initialize session state for the narrative and Agent 2 history
     if 'narrative_output' not in st.session_state:
         st.session_state.narrative_output = None
+    if 'agent2_history' not in st.session_state:
+        st.session_state.agent2_history = [] # List of tuples (HumanMessage, AIMessage)
 
     # STEP 1: Agent 1 (Data -> Narrative)
     st.subheader("Step 1: Generate Core Narrative")
     if st.button("🚀 Run Agent 1"):
         if not api_key_1:
-            st.warning("Please enter API Key 1 in the sidebar (Simulated narrative below).")
-            st.session_state.narrative_output = utils.get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach)
+            st.warning("Please enter API Key 1 in the sidebar.")
         else:
-            with st.spinner("Agent 1 is analyzing data..."):
-                # Simulation of Agent 1 logic
-                st.session_state.narrative_output = utils.get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach)
-                st.success("Agent 1 Complete!")
+            with st.spinner("Agent 1 (gpt-oss-20b) is analyzing data..."):
+                prompt = utils.generate_impact_prompt(data)
+                system_prompt = "You are a professional Florida Cooperative Extension reporting agent."
+                # Actual API Call
+                response = utils.call_llm(api_key_1, "gpt-oss-20b", system_prompt, prompt)
+                
+                if "Error" in response:
+                    st.error(response)
+                else:
+                    st.session_state.narrative_output = response
+                    st.success("Agent 1 Complete!")
 
     if st.session_state.narrative_output:
         st.info("Agent 1 Output:")
@@ -112,29 +119,53 @@ if data is not None:
         
         st.divider()
         
-        # STEP 2: Agent 2 (Narrative + User Input -> Specific Deliverable)
-        st.subheader("Step 2: Interactive Deliverable Generation")
-        user_instruction = st.text_area("What should Agent 2 generate from this narrative?", 
-                                      placeholder="e.g., 'Write a 3-post LinkedIn thread highlighting the behavior change.' or 'Draft a thank-you email for donors focus on the Community Impact.'")
+        # STEP 2: Agent 2 (Narrative + User Input -> Specific Deliverable/Chat)
+        st.subheader("Step 2: Interactive Deliverable & Chat")
         
-        if st.button("✨ Run Agent 2"):
-            if not user_instruction:
-                st.error("Please provide instructions for Agent 2.")
-            elif not api_key_2 and api_key_1: # If they gave key 1 but not key 2, assume they might want to use key 1
-                st.warning("No Key 2 provided. Using Key 1 for Agent 2 (Simulated).")
-            
-            with st.spinner("Agent 2 is crafting your deliverable..."):
-                # Generate Agent 2 Prompt
-                agent2_prompt = utils.generate_deliverable_prompt(st.session_state.narrative_output, user_instruction)
-                
-                st.success("Agent 2 Complete!")
-                st.subheader("Final Deliverable")
-                # Placeholder for Deliverable
-                st.info(f"Generated based on instruction: '{user_instruction}'")
-                st.markdown(f"**[SIMULATED OUTPUT]**\n\nThis is where the output from the second LLM would appear. It would have processed the Agent 1 narrative using your specific instructions:\n\n*\"{user_instruction}\"*")
-                
-                with st.expander("View Agent 2 Prompt Context"):
-                    st.code(agent2_prompt)
+        # Display Chat History for Agent 2
+        for i, (human_msg, ai_msg) in enumerate(st.session_state.agent2_history):
+            with st.chat_message("user"):
+                st.write(human_msg.content)
+            with st.chat_message("assistant"):
+                st.write(ai_msg.content)
+
+        # Prompt input for Agent 2
+        user_instruction = st.chat_input("Ask Agent 2 to generate something or follow up...")
+        
+        if user_instruction:
+            if not api_key_2:
+                st.error("Please enter API Key 2 in the sidebar.")
+            else:
+                with st.spinner("Agent 2 (gpt-oss-120b) is responding..."):
+                    # Construct Agent 2 context
+                    # For the very first message, we include the Agent 1 narrative as prefix context
+                    if not st.session_state.agent2_history:
+                        enhanced_instruction = f"Based on this impact narrative: '{st.session_state.narrative_output}', please execute this instruction: {user_instruction}"
+                    else:
+                        enhanced_instruction = user_instruction
+                    
+                    system_prompt = "You are an AI Communications Specialist for Florida Cooperative Extension. Use Agent 1's narrative as your core data source."
+                    
+                    # Flatten history for LangChain [Human, AI, Human, AI...]
+                    flat_history = []
+                    for h, a in st.session_state.agent2_history:
+                        flat_history.extend([h, a])
+                    
+                    # Actual API Call
+                    response_text = utils.call_llm(api_key_2, "gpt-oss-120b", system_prompt, enhanced_instruction, history=flat_history)
+                    
+                    if "Error" in response_text:
+                        st.error(response_text)
+                    else:
+                        # Update history with rolling window of 10
+                        new_human = HumanMessage(content=user_instruction)
+                        new_ai = AIMessage(content=response_text)
+                        st.session_state.agent2_history.append((new_human, new_ai))
+                        
+                        if len(st.session_state.agent2_history) > 10:
+                            st.session_state.agent2_history.pop(0)
+                        
+                        st.rerun() # Refresh to show new messages in chat UI
 
 else:
     st.info("Please upload a CSV file in the sidebar to view the dashboard and generate narratives.")
