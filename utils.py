@@ -36,6 +36,27 @@ def generate_impact_prompt(data):
     """
     return prompt
 
+def generate_deliverable_prompt(narrative, user_instruction):
+    """
+    Creates a prompt for the second agent based on Agent 1's narrative and user input.
+    """
+    prompt = f"""
+    You are an AI Communications Specialist for Florida Cooperative Extension.
+    
+    INPUT NARRATIVE FROM AGENT 1:
+    ---
+    {narrative}
+    ---
+    
+    USER INSTRUCTION:
+    {user_instruction}
+    
+    TASK:
+    Based on the input narrative, execute the user instruction exactly. 
+    Ensure the output maintains the professional and impactful tone of the Extension service.
+    """
+    return prompt
+
 def get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach):
     """Fallback narrative if no API key is provided."""
     return f"""

@@ -21,8 +21,11 @@ Perfect for reporting to leadership and stakeholders.
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("Settings")
-    api_key = st.text_input("Enter OpenAI/Gemini API Key", type="password")
+    st.header("🔑 Agent Credentials")
+    api_key_1 = st.text_input("Agent 1 API Key (Narrative)", type="password", help="Used to analyze data and write the core narrative.")
+    api_key_2 = st.text_input("Agent 2 API Key (Deliverables)", type="password", help="Used to transform the narrative into custom outputs. Can be same as Agent 1.")
+    
+    st.divider()
     uploaded_file = st.file_uploader("Upload your data (CSV)", type="csv")
     
     st.info("Download the [mock_data.csv](https://github.com/your-repo/mock_data.csv) to test the dashboard.")
@@ -83,30 +86,55 @@ if data is not None:
                       markers=True, labels={'value': 'Reach', 'variable': 'Metric'})
     st.plotly_chart(fig_line, use_container_width=True)
 
-    # --- AI NARRATIVE SECTION ---
+    # --- MULTI-STEP AGENT CHAIN ---
     st.divider()
-    st.header("🤖 AI Impact Narrative")
+    st.header("🤖 Multi-Model Agent Chain")
     
-    if st.button("Generate Narrative"):
-        if not api_key:
-            st.warning("Please enter an API key in the sidebar to generate narratives (Simulated version below).")
-            narrative = utils.get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach)
-            
-            st.subheader("Impact Narrative (Simulated)")
-            st.write(narrative)
-            
-            st.subheader("Professional Prompt (Internal)")
-            with st.expander("View generated prompt for LLM"):
-                st.code(utils.generate_impact_prompt(data))
+    # Initialize session state for the narrative
+    if 'narrative_output' not in st.session_state:
+        st.session_state.narrative_output = None
+
+    # STEP 1: Agent 1 (Data -> Narrative)
+    st.subheader("Step 1: Generate Core Narrative")
+    if st.button("🚀 Run Agent 1"):
+        if not api_key_1:
+            st.warning("Please enter API Key 1 in the sidebar (Simulated narrative below).")
+            st.session_state.narrative_output = utils.get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach)
         else:
-            with st.spinner("Analyzing data and crafting your story..."):
-                # Here we would call an actual LLM API like gemini or openai
-                # For this demo, we'll still use the enhanced generator logic
-                prompt = utils.generate_impact_prompt(data)
-                # Simulated response based on the prompt structure
-                st.success("Narrative generated successfully using provided API context!")
-                st.info("In a production environment, the prompt below would be sent to the LLM.")
-                st.code(prompt)
+            with st.spinner("Agent 1 is analyzing data..."):
+                # Simulation of Agent 1 logic
+                st.session_state.narrative_output = utils.get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach)
+                st.success("Agent 1 Complete!")
+
+    if st.session_state.narrative_output:
+        st.info("Agent 1 Output:")
+        st.markdown(st.session_state.narrative_output)
+        
+        st.divider()
+        
+        # STEP 2: Agent 2 (Narrative + User Input -> Specific Deliverable)
+        st.subheader("Step 2: Interactive Deliverable Generation")
+        user_instruction = st.text_area("What should Agent 2 generate from this narrative?", 
+                                      placeholder="e.g., 'Write a 3-post LinkedIn thread highlighting the behavior change.' or 'Draft a thank-you email for donors focus on the Community Impact.'")
+        
+        if st.button("✨ Run Agent 2"):
+            if not user_instruction:
+                st.error("Please provide instructions for Agent 2.")
+            elif not api_key_2 and api_key_1: # If they gave key 1 but not key 2, assume they might want to use key 1
+                st.warning("No Key 2 provided. Using Key 1 for Agent 2 (Simulated).")
+            
+            with st.spinner("Agent 2 is crafting your deliverable..."):
+                # Generate Agent 2 Prompt
+                agent2_prompt = utils.generate_deliverable_prompt(st.session_state.narrative_output, user_instruction)
+                
+                st.success("Agent 2 Complete!")
+                st.subheader("Final Deliverable")
+                # Placeholder for Deliverable
+                st.info(f"Generated based on instruction: '{user_instruction}'")
+                st.markdown(f"**[SIMULATED OUTPUT]**\n\nThis is where the output from the second LLM would appear. It would have processed the Agent 1 narrative using your specific instructions:\n\n*\"{user_instruction}\"*")
+                
+                with st.expander("View Agent 2 Prompt Context"):
+                    st.code(agent2_prompt)
 
 else:
     st.info("Please upload a CSV file in the sidebar to view the dashboard and generate narratives.")
