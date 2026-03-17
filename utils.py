@@ -33,40 +33,62 @@ def call_llm(api_key, model_name, system_prompt, human_prompt, history=None):
 def generate_impact_prompt(data):
     """
     Creates a detailed prompt for the LLM based on summarized Extension metrics.
+    Includes qualitative insights from the expanded mock data.
     """
     total_contacts = data['Total Contacts'].sum()
     indirect_reach = data['Indirect Reach'].sum()
     avg_knowledge = data['Knowledge Gain (%)'].mean()
     top_topic = data['Topic'].mode()[0]
     
+    # New metrics for Agent 1
+    success_rate = (data['Success Story'] == 'Yes').mean() * 100
+    top_audience = data['Target Audience'].mode()[0]
+    
     summary_stats = data.groupby('Topic')[['Total Contacts', 'Surveys Collected', 'Knowledge Gain (%)']].mean().to_string()
+    
+    # Get a few distinctive qualitative feedback snippets
+    feedback_samples = data[data['Qualitative Feedback'].notna()]['Qualitative Feedback'].head(5).tolist()
+    feedback_text = "\n- ".join(feedback_samples)
 
     prompt = f"""
     You are an AI Agent specialized in Florida Cooperative Extension reporting. 
-    Your goal is to transform the following raw metrics into a professional 'Impact Narrative'.
+    Your goal is to transform the following raw metrics and qualitative insights into a professional 'Impact Narrative'.
 
     GLOBAL METRICS:
     - Total Direct Contacts: {total_contacts:,}
     - Total Indirect Reach: {indirect_reach:,}
     - Average Knowledge Gain: {avg_knowledge:.1f}%
-    - Most Frequent Topic: {top_topic}
+    - Overall Success Story Rate: {success_rate:.1f}%
+    - Most Frequent Focus Area: {top_topic}
+    - Primary Target Audience: {top_audience}
 
     TOPIC-LEVEL BREAKDOWN:
     {summary_stats}
 
-    TASKS:
-    1. Write a 3-paragraph professional 'Impact Narrative' following UF/IFAS standards. Focus on the value provided to the community.
-    2. Provide a 3-bullet point 'Executive Summary' for leadership.
-    3. Suggest one 'Success Story' headline based on these numbers.
+    SELECTED QUALITATIVE FEEDBACK:
+    - {feedback_text}
 
-    TONE: Professional, academic yet accessible, and results-oriented.
+    TASKS:
+    1. Write a 3-paragraph professional 'Impact Narrative' following UF/IFAS standards. 
+       - Paragraph 1: Quantitative reach and focus.
+       - Paragraph 2: Knowledge gain and specific success story highlights.
+       - Paragraph 3: Long-term community impact and qualitative sentiment.
+    2. Provide a 3-bullet point 'Executive Summary' for leadership.
+    3. Suggest one 'Champion Quote' based on the qualitative feedback provided.
+
+    TONE: Professional, authoritative yet community-focused, and results-oriented.
     """
     return prompt
 
-def generate_deliverable_prompt(narrative, user_instruction):
+def generate_deliverable_prompt(narrative, user_instruction, raw_data=None):
     """
-    Creates a prompt for the second agent based on Agent 1's narrative and user input.
+    Creates a prompt for the second agent based on Agent 1's narrative, 
+    user input, and optional raw data context.
     """
+    data_context = ""
+    if raw_data is not None:
+        data_context = f"\nRAW DATA CONTEXT:\n---\n{raw_data}\n---\n"
+
     prompt = f"""
     You are an AI Communications Specialist for Florida Cooperative Extension.
     
@@ -74,15 +96,26 @@ def generate_deliverable_prompt(narrative, user_instruction):
     ---
     {narrative}
     ---
+    {data_context}
     
     USER INSTRUCTION:
     {user_instruction}
     
     TASK:
-    Based on the input narrative, execute the user instruction exactly. 
+    Based on the input narrative and the raw data context, execute the user instruction exactly. 
     Ensure the output maintains the professional and impactful tone of the Extension service.
     """
     return prompt
+
+def format_data_for_agent(df):
+    """
+    Converts the dataframe to a concise markdown table for LLM context.
+    """
+    # Keep essential columns to save tokens while providing full context
+    cols = ['Program Date', 'County', 'Program Name', 'Topic', 'Total Contacts', 'Indirect Reach',
+            'Knowledge Gain (%)', 'Behavior Change (%)', 'Program Type', 'Target Audience', 
+            'Success Story', 'Qualitative Feedback']
+    return df[cols].to_markdown(index=False)
 
 def get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach):
     """Fallback narrative if no API key is provided."""

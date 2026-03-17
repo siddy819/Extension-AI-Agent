@@ -1,11 +1,29 @@
-Program Date,County,Program Name,Topic,Total Contacts,Indirect Reach,Surveys Collected,Knowledge Gain (%),Behavior Change (%)
-2024-01-15,Miami-Dade,Sustainable Urban Gardening,Agriculture,45,120,38,85,60
-2024-01-20,Orange,Water Conservation Workshop,Natural Resources,30,80,25,92,75
-2024-02-05,Hillsborough,Healthy Snacking for Kids,Youth & Families,120,400,90,78,45
-2024-02-12,Miami-Dade,Composting 101,Agriculture,25,60,20,88,55
-2024-02-28,Alachua,Local Food Systems Forum,Community Development,55,250,45,82,68
-2024-03-10,Orange,Pollinator Garden Design,Natural Resources,40,150,35,90,72
-2024-03-22,Hillsborough,Financial Literacy for Teens,Youth & Families,65,200,50,85,50
-2024-04-05,Miami-Dade,Beekeeping Basics,Agriculture,35,100,30,94,78
-2024-04-18,Orange,Shoreline Restoration,Natural Resources,50,300,40,88,65
-2024-05-02,Alachua,Backyard Chickens,Agriculture,42,110,36,86,70
+Program Date,County,Program Name,Topic,Total Contacts,Indirect Reach,Surveys Collected,Knowledge Gain (%),Behavior Change (%),Program Type,Target Audience,Success Story,Qualitative Feedback
+2024-01-15,Miami-Dade,Sustainable Urban Gardening,Agriculture,45,120,38,85,60,Workshop,Homeowners,Yes,"Participants learned how to maximize yields in small urban spaces."
+2024-01-20,Orange,Water Conservation Workshop,Natural Resources,30,80,25,92,75,Seminar,Residents,Yes,"Great engagement with local water utility data."
+2024-02-05,Hillsborough,Healthy Snacking for Kids,Youth & Families,120,400,90,78,45,Interactive Demo,School Students,No,"High attendance but behavior change follow-up is challenging."
+2024-02-12,Miami-Dade,Composting 101,Agriculture,25,60,20,88,55,Hands-on Training,Beginner Gardeners,Yes,"Many started their first bin immediately after."
+2024-02-28,Alachua,Local Food Systems Forum,Community Development,55,250,45,82,68,Forum,Public Officials,Yes,"Established a new network for local producers."
+2024-03-10,Orange,Pollinator Garden Design,Natural Resources,40,150,35,90,72,Workshop,Landscapers,Yes,"Incorported 5 new native species into designs."
+2024-03-22,Hillsborough,Financial Literacy for Teens,Youth & Families,65,200,50,85,50,Classroom Session,High Schoolers,No,"Content was a bit advanced for some younger teens."
+2024-04-05,Miami-Dade,Beekeeping Basics,Agriculture,35,100,30,94,78,Field Day,Aspiring Beekeepers,Yes,"Three participants registered new hives."
+2024-04-18,Orange,Shoreline Restoration,Natural Resources,50,300,40,88,65,Field Day,Lakefront Residents,Yes,"Restored 200 linear feet of shoreline."
+2024-05-02,Alachua,Backyard Chickens,Agriculture,42,110,36,86,70,Seminar,Hobby Farmers,Yes,"Focus on biosecurity was well received."
+2024-05-15,Leon,Invasive Species Management,Natural Resources,28,95,22,81,58,Field Trip,Volunteers,Yes,"Removed 2 acres of invasive air potato."
+2024-05-20,Palm Beach,Master Gardener Training,Agriculture,18,500,18,97,90,Certification,Advanced Gardeners,Yes,"100% pass rate on certification exam."
+2024-06-02,Broward,Climate Change Awareness,Natural Resources,85,1200,60,74,40,Public Lecture,General Public,No,"High interest but low immediate behavior change."
+2024-06-12,Duval,4-H Day Camp,Youth & Families,150,600,120,88,65,Summer Camp,Youth (8-12),Yes,"Parents reported kids using new STEM skills at home."
+2024-06-28,Pinellas,Mangrove Trimming Rules,Natural Resources,45,180,42,91,82,Webinar,Property Managers,Yes,"Reduced illegal trimming reports by 15%."
+2024-07-05,Miami-Dade,Tropical Fruit Production,Agriculture,38,150,32,84,62,Field Day,Commercial Growers,Yes,"Identified new varieties for local market."
+2024-07-18,Orange,Energy Efficient Homes,Community Development,52,220,48,87,70,Seminar,Low Income Families,Yes,"Average projected savings of $15/month."
+2024-08-01,Hillsborough,Financial Management for Seniors,Community Development,32,110,28,83,55,Workshop,Seniors (65+),No,"Technology gap made assessment difficult."
+2024-08-15,Alachua,Horse Management 101,Agriculture,25,85,20,89,72,Seminar,Horse Owners,Yes,"Implemented improved pasture rotation."
+2024-08-25,Miami-Dade,Hurricance Preparedness,Community Development,200,5000,150,92,88,Webinar,General Public,Yes,"Highest attendance of the year; critical info."
+2024-09-10,Leon,Native Wildflower Planting,Natural Resources,15,60,12,95,85,Hands-on Training,Gardeners,Yes,"Direct impact on local pollinator pathways."
+2024-09-22,Duval,Small Business Marketing,Community Development,22,120,18,80,50,Workshop,Entrepeneurs,No,"Mixed feedback on social media strategy."
+2024-10-05,Palm Beach,Best Management Practices,Agriculture,60,400,55,88,78,Conference,Farms,Yes,"Adopted 3 new EPA-backed water protocols."
+2024-10-18,Orange,Composting for Schools,Youth & Families,110,1200,80,82,60,Workshop,Teachers,Yes,"Started composting systems in 5 local schools."
+2024-11-02,Hillsborough,Irrigation System Tune-up,Natural Resources,40,150,35,93,85,Hands-on Training,Homeowners,Yes,"Measured 20% reduction in water waste."
+2024-11-15,Alachua,Livestock Health,Agriculture,35,110,30,87,70,Seminar,Livestock Farmers,Yes,"Reduced winter losses by estimated 5%."
+2024-12-05,Miami-Dade,Sustainable Tourism Forum,Community Development,45,800,40,79,55,Forum,Tourism Board Members,No,"Broad goals established but few concrete steps."
+2024-12-15,Orlando,Extension Open House,General,120,2500,50,75,40,Community Event,General Public,Yes,"High visibility and new client registrations."

@@ -1,3 +1,5 @@
+import streamlit as st
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
@@ -49,16 +51,18 @@ if data is not None:
     st.header("📈 Impact Dashboard")
     
     # KPI Row
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     total_contacts = data['Total Contacts'].sum()
     indirect_reach = data['Indirect Reach'].sum()
     avg_knowledge_gain = data['Knowledge Gain (%)'].mean()
     total_surveys = data['Surveys Collected'].sum()
+    success_count = (data['Success Story'] == 'Yes').sum()
     
     col1.metric("Total Contacts", f"{total_contacts:,}")
     col2.metric("Indirect Reach", f"{indirect_reach:,}")
     col3.metric("Avg. Knowledge Gain", f"{avg_knowledge_gain:.1f}%")
     col4.metric("Surveys Collected", f"{total_surveys:,}")
+    col5.metric("Success Stories", f"{success_count}")
     
     st.divider()
     
@@ -69,21 +73,42 @@ if data is not None:
         st.subheader("Contacts by Topic")
         fig_topic = px.pie(data, values='Total Contacts', names='Topic', hole=0.4,
                          color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_topic, use_container_width=True)
+        st.plotly_chart(fig_topic, width='stretch')
         
     with c2:
         st.subheader("Knowledge Gain vs. Behavior Change")
         fig_scatter = px.scatter(data, x='Knowledge Gain (%)', y='Behavior Change (%)', 
                                size='Total Contacts', color='Topic', hover_name='Program Name',
+                               hover_data=['Success Story', 'County', 'Target Audience'],
                                color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, width='stretch')
         
     # Trend Analysis
     st.subheader("Program Reach Trend")
     trend_data = data.groupby('Program Date')[['Total Contacts', 'Indirect Reach']].sum().reset_index()
     fig_line = px.line(trend_data, x='Program Date', y=['Total Contacts', 'Indirect Reach'],
-                      markers=True, labels={'value': 'Reach', 'variable': 'Metric'})
-    st.plotly_chart(fig_line, use_container_width=True)
+                      markers=True, labels={'value': 'Reach', 'variable': 'Metric'},
+                      color_discrete_sequence=px.colors.qualitative.Pastel)
+    st.plotly_chart(fig_line, width='stretch')
+
+    # New Qualitative Row
+    st.divider()
+    st.subheader("Qualitative Program Insights")
+    q1, q2 = st.columns(2)
+    
+    with q1:
+        st.subheader("Delivery Methods (Program Type)")
+        fig_type = px.bar(data['Program Type'].value_counts().reset_index(), 
+                         x='Program Type', y='count', color='Program Type',
+                         labels={'Program Type': 'Type', 'count': 'Frequency'},
+                         color_discrete_sequence=px.colors.qualitative.Pastel)
+        st.plotly_chart(fig_type, width='stretch')
+        
+    with q2:
+        st.subheader("Success Story Distribution")
+        fig_success = px.pie(data, names='Success Story', hole=0.4,
+                           color_discrete_sequence=['#66c2a5', '#fc8d62']) # Green for Yes, Orange for No
+        st.plotly_chart(fig_success, width='stretch')
 
     # --- MULTI-STEP AGENT CHAIN ---
     st.divider()
@@ -138,13 +163,55 @@ if data is not None:
             else:
                 with st.spinner("Agent 2 (gpt-oss-120b) is responding..."):
                     # Construct Agent 2 context
-                    # For the very first message, we include the Agent 1 narrative as prefix context
+                    # For the very first message, we include both the Agent 1 narrative AND the raw data
                     if not st.session_state.agent2_history:
-                        enhanced_instruction = f"Based on this impact narrative: '{st.session_state.narrative_output}', please execute this instruction: {user_instruction}"
+                        raw_data_md = utils.format_data_for_agent(data)
+                        enhanced_instruction = utils.generate_deliverable_prompt(
+                            st.session_state.narrative_output, 
+                            user_instruction, 
+                            raw_data=raw_data_md
+                        )
                     else:
                         enhanced_instruction = user_instruction
                     
-                    system_prompt = "You are an AI Communications Specialist for Florida Cooperative Extension. Use Agent 1's narrative as your core data source."
+                    system_prompt = """You are a data insights assistant. Your answers must be grounded exclusively in the 
+provided context from the summarizer agent. Follow these rules strictly:
+
+## Source Fidelity
+- Answer ONLY from information explicitly stated in the provided context.
+- If the context does not contain enough information to answer a question, say: 
+  "The available data doesn't cover that — here's what I can tell you: [related info]."
+- Never infer, extrapolate, or speculate beyond what the context states.
+
+## Handling Numbers & Statistics
+- Quote figures exactly as they appear in the context. Do not round, restate, or 
+  reinterpret them unless explicitly asked to.
+- If a number seems unusual or contradictory, surface it as-is and flag the 
+  discrepancy rather than silently correcting it.
+- Never perform calculations unless the user explicitly requests it, and if you do, 
+  show your work.
+
+## Scope Boundaries
+- Do not bring in outside knowledge, industry benchmarks, or general facts to 
+  supplement the context — even if they seem helpful.
+- If the user asks a question that goes beyond the data (e.g., causes, predictions, 
+  recommendations), clearly label your response as inference and keep it brief:
+  "This isn't in the data, but one possible interpretation is..."
+
+## Uncertainty & Gaps
+- Acknowledge when the context is ambiguous or incomplete rather than filling gaps 
+  with assumptions.
+- Use hedged language when the context is indirect: "The data suggests...", 
+  "According to the summary...", "Based on what's provided..."
+- If a claim cannot be traced back to the context, do not make it.
+
+## Source Transparency
+- When a user asks how you know something, cite the relevant part of the context 
+  directly.
+- If two parts of the context appear to contradict each other, flag both versions 
+  rather than picking one.
+
+"""
                     
                     # Flatten history for LangChain [Human, AI, Human, AI...]
                     flat_history = []
