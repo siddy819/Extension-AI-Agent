@@ -144,38 +144,25 @@ def format_data_for_agent(df):
     return df[cols].to_markdown(index=False)
 
 def create_pdf(markdown_text, figs=None):
-    """Converts markdown text to a PDF byte string, optionally embedding Plotly figures."""
+    """Converts markdown text to a PDF byte string."""
     from markdown_pdf import MarkdownPdf, Section
+    import tempfile
     import os
     
     pdf = MarkdownPdf(toc_level=0)
+    pdf.add_section(Section(markdown_text))
     
-    extended_text = markdown_text
-    img_paths = []
-    
-    if figs:
-        extended_text += "\n\n## Dashboard Visualizations\n\n"
-        for i, fig in enumerate(figs):
-            img_path = f"fig_{i}.png"
-            fig.write_image(img_path, width=800, height=500)
-            img_paths.append(img_path)
-            # Use simple relative paths so markdown-pdf can find them on Windows
-            extended_text += f"![Figure {i}]({img_path})\n\n"
-            
-    pdf.add_section(Section(extended_text))
-    
-    pdf_out = "temp_output.pdf"
+    # Use system temp directory to prevent Streamlit from reloading and locking the file
+    pdf_out = os.path.join(tempfile.gettempdir(), f"stream_export_{os.urandom(4).hex()}.pdf")
     pdf.save(pdf_out)
     
     with open(pdf_out, "rb") as f:
         pdf_bytes = f.read()
         
-    # Cleanup temporary files
-    if os.path.exists(pdf_out):
+    try:
         os.remove(pdf_out)
-    for img in img_paths:
-        if os.path.exists(img):
-            os.remove(img)
+    except PermissionError:
+        pass
             
     return pdf_bytes
 

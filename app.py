@@ -169,15 +169,6 @@ if data is not None:
         st.info("Agent 1 Output:")
         st.markdown(st.session_state.narrative_output)
         
-        figs = [fig_topic, fig_scatter, fig_line, fig_type, fig_success]
-        pdf_bytes = utils.create_pdf(st.session_state.narrative_output, figs=figs)
-        st.download_button(
-            label="💾 Download Narrative Report (.pdf)",
-            data=pdf_bytes,
-            file_name="extension_impact_report.pdf",
-            mime="application/pdf"
-        )
-        
         st.divider()
         
         # STEP 2: Agent 2 (Narrative + User Input -> Specific Deliverable/Chat)
@@ -189,6 +180,26 @@ if data is not None:
                 st.write(human_msg.content)
             with st.chat_message("assistant"):
                 st.write(ai_msg.content)
+
+        st.divider()
+        st.subheader("📥 Export Final Report")
+        
+        # Combine Agent 1 and Agent 2 results
+        full_report = st.session_state.narrative_output
+        if st.session_state.agent2_history:
+            full_report += "\n\n---\n\n## AI Assistant Q&A\n\n"
+            for h_msg, a_msg in st.session_state.agent2_history:
+                full_report += f"**User:** {h_msg.content}\n\n"
+                full_report += f"**Agent:** {a_msg.content}\n\n"
+                
+        pdf_bytes = utils.create_pdf(full_report)
+        st.download_button(
+            label="💾 Download Comprehensive Report (.pdf)",
+            data=pdf_bytes,
+            file_name="extension_impact_report.pdf",
+            mime="application/pdf"
+        )
+        st.divider()
 
         # Prompt input for Agent 2
         user_instruction = st.chat_input("Ask Agent 2 to generate something or follow up...")
@@ -279,11 +290,18 @@ else:
     # Display preview of mock data layout
     st.subheader("Expected Data Format")
     preview_df = pd.DataFrame({
-        'Program Date': ['2024-01-01', '2024-01-05'],
-        'County': ['Alachua', 'Miami-Dade'],
+        'Program Date': ['2024-01-15', '2024-02-05'],
+        'County': ['Miami-Dade', 'Hillsborough'],
+        'Program Name': ['Sustainable Urban Gardening', 'Healthy Snacking for Kids'],
         'Topic': ['Agriculture', 'Youth & Families'],
-        'Total Contacts': [50, 100],
-        'Indirect Reach': [200, 500],
-        'Knowledge Gain (%)': [85, 90]
+        'Total Contacts': [45, 120],
+        'Indirect Reach': [120, 400],
+        'Surveys Collected': [38, 90],
+        'Knowledge Gain (%)': [85, 78],
+        'Behavior Change (%)': [60, 45],
+        'Program Type': ['Workshop', 'Interactive Demo'],
+        'Target Audience': ['Homeowners', 'School Students'],
+        'Success Story': ['Yes', 'No'],
+        'Qualitative Feedback': ['Learned how to maximize yields.', 'High attendance but...']
     })
     st.table(preview_df)
