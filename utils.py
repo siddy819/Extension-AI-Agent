@@ -3,32 +3,6 @@ import pandas as pd
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
-def call_llm(api_key, model_name, system_prompt, human_prompt, history=None):
-    """
-    Performs a real API call to the UF IT enterprise endpoint using LangChain.
-    Supports a rolling history of messages.
-    """
-    try:
-        chat = ChatOpenAI(
-            openai_api_key=api_key,
-            openai_api_base="https://api.ai.it.ufl.edu",
-            model=model_name,
-            temperature=0.1
-        )
-        
-        messages = [SystemMessage(content=system_prompt)]
-        
-        # Add history if provided (expected as list of SystemMessage/HumanMessage/AIMessage)
-        if history:
-            messages.extend(history)
-            
-        # Add the current human prompt
-        messages.append(HumanMessage(content=human_prompt))
-        
-        response = chat.invoke(messages)
-        return response.content
-    except Exception as e:
-        return f"Error calling LLM: {str(e)}"
 
 def call_llm_stream(api_key, model_name, system_prompt, human_prompt, history=None):
     """
@@ -55,6 +29,46 @@ def call_llm_stream(api_key, model_name, system_prompt, human_prompt, history=No
             yield chunk.content
     except Exception as e:
         yield f"\n\n🚨 Error calling LLM: {str(e)}"
+
+def get_agent2_system_prompt():
+    """Returns the strict system prompt for the interactive Chat Agent."""
+    return """You are a data insights assistant. Your answers must be grounded exclusively in the 
+provided context from the summarizer agent. Follow these rules strictly:
+
+## Source Fidelity
+- Answer ONLY from information explicitly stated in the provided context.
+- If the context does not contain enough information to answer a question, say: 
+  "The available data doesn't cover that — here's what I can tell you: [related info]."
+- Never infer, extrapolate, or speculate beyond what the context states.
+
+## Handling Numbers & Statistics
+- Quote figures exactly as they appear in the context. Do not round, restate, or 
+  reinterpret them unless explicitly asked to.
+- If a number seems unusual or contradictory, surface it as-is and flag the 
+  discrepancy rather than silently correcting it.
+- Never perform calculations unless the user explicitly requests it, and if you do, 
+  show your work.
+
+## Scope Boundaries
+- Do not bring in outside knowledge, industry benchmarks, or general facts to 
+  supplement the context — even if they seem helpful.
+- If the user asks a question that goes beyond the data (e.g., causes, predictions, 
+  recommendations), clearly label your response as inference and keep it brief:
+  "This isn't in the data, but one possible interpretation is..."
+
+## Uncertainty & Gaps
+- Acknowledge when the context is ambiguous or incomplete rather than filling gaps 
+  with assumptions.
+- Use hedged language when the context is indirect: "The data suggests...", 
+  "According to the summary...", "Based on what's provided..."
+- If a claim cannot be traced back to the context, do not make it.
+
+## Source Transparency
+- When a user asks how you know something, cite the relevant part of the context 
+  directly.
+- If two parts of the context appear to contradict each other, flag both versions 
+  rather than picking one.
+"""
 
 def generate_impact_prompt(data):
     """
