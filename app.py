@@ -37,10 +37,24 @@ def load_data(file):
     if file is not None:
         try:
             df = pd.read_csv(file)
+            
+            # Validate required columns
+            required_cols = [
+                'Program Date', 'County', 'Program Name', 'Topic', 'Total Contacts', 
+                'Indirect Reach', 'Surveys Collected', 'Knowledge Gain (%)', 
+                'Behavior Change (%)', 'Program Type', 'Target Audience', 
+                'Success Story', 'Qualitative Feedback'
+            ]
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            
+            if missing_cols:
+                st.error(f"⚠️ **Data Format Error:** The uploaded CSV is missing the following required columns: `{', '.join(missing_cols)}`. Please match the Expected Data Format below.")
+                return None
+                
             df['Program Date'] = pd.to_datetime(df['Program Date'])
             return df
         except Exception as e:
-            st.error(f"Error loading data: {e}")
+            st.error(f"Error parsing CSV file: {e}")
             return None
     return None
 
@@ -75,18 +89,20 @@ if data is not None:
     st.header("📈 Impact Dashboard")
     
     # KPI Row
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    total_events = len(data)
     total_contacts = data['Total Contacts'].sum()
     indirect_reach = data['Indirect Reach'].sum()
     avg_knowledge_gain = data['Knowledge Gain (%)'].mean()
     total_surveys = data['Surveys Collected'].sum()
     success_count = (data['Success Story'] == 'Yes').sum()
     
-    col1.metric("Total Contacts", f"{total_contacts:,}")
-    col2.metric("Indirect Reach", f"{indirect_reach:,}")
-    col3.metric("Avg. Knowledge Gain", f"{avg_knowledge_gain:.1f}%")
-    col4.metric("Surveys Collected", f"{total_surveys:,}")
-    col5.metric("Success Stories", f"{success_count}")
+    col1.metric("Total Events", f"{total_events}")
+    col2.metric("Total Contacts", f"{total_contacts:,}")
+    col3.metric("Indirect Reach", f"{indirect_reach:,}")
+    col4.metric("Avg. Knowledge", f"{avg_knowledge_gain:.1f}%")
+    col5.metric("Surveys", f"{total_surveys:,}")
+    col6.metric("Success Stories", f"{success_count}")
     
     st.divider()
     
