@@ -143,6 +143,33 @@ def format_data_for_agent(df):
             'Success Story', 'Qualitative Feedback']
     return df[cols].to_markdown(index=False)
 
+def create_pdf(markdown_text, figs=None):
+    """Converts markdown text to a PDF byte string, optionally embedding Plotly figures."""
+    from markdown_pdf import MarkdownPdf, Section
+    import tempfile
+    import os
+    
+    pdf = MarkdownPdf(toc_level=0)
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        extended_text = markdown_text
+        if figs:
+            extended_text += "\n\n## Dashboard Visualizations\n\n"
+            for i, fig in enumerate(figs):
+                img_path = os.path.join(temp_dir, f"fig_{i}.png")
+                fig.write_image(img_path, width=800, height=500)
+                img_path_md = img_path.replace("\\", "/")
+                extended_text += f"![Figure {i}]({img_path_md})\n\n"
+        
+        pdf.add_section(Section(extended_text))
+        
+        pdf_out = os.path.join(temp_dir, "output.pdf")
+        pdf.save(pdf_out)
+        with open(pdf_out, "rb") as f:
+            pdf_bytes = f.read()
+            
+    return pdf_bytes
+
 def get_placeholder_narrative(total_contacts, avg_knowledge_gain, indirect_reach):
     """Fallback narrative if no API key is provided."""
     return f"""

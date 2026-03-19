@@ -169,11 +169,13 @@ if data is not None:
         st.info("Agent 1 Output:")
         st.markdown(st.session_state.narrative_output)
         
+        figs = [fig_topic, fig_scatter, fig_line, fig_type, fig_success]
+        pdf_bytes = utils.create_pdf(st.session_state.narrative_output, figs=figs)
         st.download_button(
-            label="💾 Download Narrative Report (.md)",
-            data=st.session_state.narrative_output,
-            file_name="extension_impact_report.md",
-            mime="text/markdown"
+            label="💾 Download Narrative Report (.pdf)",
+            data=pdf_bytes,
+            file_name="extension_impact_report.pdf",
+            mime="application/pdf"
         )
         
         st.divider()
