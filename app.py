@@ -29,7 +29,7 @@ with st.sidebar:
     st.divider()
     uploaded_file = st.file_uploader("Upload your data (CSV)", type="csv")
     
-    st.info("Download the [mock_data.csv](https://github.com/your-repo/mock_data.csv) to test the dashboard.")
+    st.info("Download the [mock_data.csv](https://github.com/siddy819/Extension-AI-Agent/blob/main/mock_data.csv) to test the dashboard.")
 
 # --- DATA LOADING ---
 @st.cache_data
@@ -47,6 +47,30 @@ def load_data(file):
 data = load_data(uploaded_file)
 
 if data is not None:
+    st.sidebar.subheader("🎯 Dashboard Filters")
+    all_counties = sorted(data['County'].unique())
+    selected_counties = st.sidebar.multiselect("Select Counties", options=all_counties, default=all_counties)
+    
+    all_topics = sorted(data['Topic'].unique())
+    selected_topics = st.sidebar.multiselect("Select Topics", options=all_topics, default=all_topics)
+    
+    # Reset AI state if filters change to prevent stale data in Agent memory
+    current_selection = {'counties': selected_counties, 'topics': selected_topics}
+    if 'last_filters' not in st.session_state:
+        st.session_state.last_filters = current_selection
+        
+    if st.session_state.last_filters != current_selection:
+        st.session_state.last_filters = current_selection
+        st.session_state.narrative_output = None
+        st.session_state.agent2_history = []
+    
+    # Apply filters
+    data = data[(data['County'].isin(selected_counties)) & (data['Topic'].isin(selected_topics))]
+    
+    if data.empty:
+        st.warning("No data available for the selected filters. Please adjust your selections.")
+        st.stop()
+
     # --- DASHBOARD SECTION ---
     st.header("📈 Impact Dashboard")
     
@@ -129,18 +153,28 @@ if data is not None:
             with st.spinner("Agent 1 (gpt-oss-20b) is analyzing data..."):
                 prompt = utils.generate_impact_prompt(data)
                 system_prompt = "You are a professional Florida Cooperative Extension reporting agent."
-                # Actual API Call
-                response = utils.call_llm(api_key_1, "gpt-oss-20b", system_prompt, prompt)
+                # Stream the response
+                response_container = st.empty()
+                stream = utils.call_llm_stream(api_key_1, "gpt-oss-20b", system_prompt, prompt)
+                full_response = response_container.write_stream(stream)
                 
-                if "Error" in response:
-                    st.error(response)
+                if "Error" in full_response:
+                    st.error(full_response)
                 else:
-                    st.session_state.narrative_output = response
+                    st.session_state.narrative_output = full_response
                     st.success("Agent 1 Complete!")
+                    response_container.empty() # Clear the stream container so it seamlessly shows below
 
     if st.session_state.narrative_output:
         st.info("Agent 1 Output:")
         st.markdown(st.session_state.narrative_output)
+        
+        st.download_button(
+            label="💾 Download Narrative Report (.md)",
+            data=st.session_state.narrative_output,
+            file_name="extension_impact_report.md",
+            mime="text/markdown"
+        )
         
         st.divider()
         
@@ -218,15 +252,18 @@ provided context from the summarizer agent. Follow these rules strictly:
                     for h, a in st.session_state.agent2_history:
                         flat_history.extend([h, a])
                     
-                    # Actual API Call
-                    response_text = utils.call_llm(api_key_2, "gpt-oss-120b", system_prompt, enhanced_instruction, history=flat_history)
+                    # Actual API Call Stream
+                    stream = utils.call_llm_stream(api_key_2, "gpt-oss-120b", system_prompt, enhanced_instruction, history=flat_history)
                     
-                    if "Error" in response_text:
-                        st.error(response_text)
+                    with st.chat_message("assistant"):
+                        full_response = st.write_stream(stream)
+                    
+                    if "Error" in full_response:
+                        st.error(full_response)
                     else:
                         # Update history with rolling window of 10
                         new_human = HumanMessage(content=user_instruction)
-                        new_ai = AIMessage(content=response_text)
+                        new_ai = AIMessage(content=full_response)
                         st.session_state.agent2_history.append((new_human, new_ai))
                         
                         if len(st.session_state.agent2_history) > 10:

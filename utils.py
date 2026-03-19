@@ -30,6 +30,32 @@ def call_llm(api_key, model_name, system_prompt, human_prompt, history=None):
     except Exception as e:
         return f"Error calling LLM: {str(e)}"
 
+def call_llm_stream(api_key, model_name, system_prompt, human_prompt, history=None):
+    """
+    Performs a real API call to the UF IT enterprise endpoint using LangChain.
+    Yields chunks for streaming output in Streamlit.
+    """
+    try:
+        chat = ChatOpenAI(
+            openai_api_key=api_key,
+            openai_api_base="https://api.ai.it.ufl.edu",
+            model=model_name,
+            temperature=0.1,
+            streaming=True
+        )
+        
+        messages = [SystemMessage(content=system_prompt)]
+        
+        if history:
+            messages.extend(history)
+            
+        messages.append(HumanMessage(content=human_prompt))
+        
+        for chunk in chat.stream(messages):
+            yield chunk.content
+    except Exception as e:
+        yield f"\n\n🚨 Error calling LLM: {str(e)}"
+
 def generate_impact_prompt(data):
     """
     Creates a detailed prompt for the LLM based on summarized Extension metrics.
