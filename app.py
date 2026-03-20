@@ -190,6 +190,11 @@ if data is not None:
         # STEP 2: Agent 2 (Narrative + User Input -> Specific Deliverable/Chat)
         st.subheader("Step 2: Interactive Deliverable & Chat")
         
+        # Option to refresh/clear Agent 2 history
+        if st.button("🗑️ Clear Agent 2 Chat History"):
+            st.session_state.agent2_history = []
+            st.rerun()
+        
         # Display Chat History for Agent 2
         for i, (human_msg, ai_msg) in enumerate(st.session_state.agent2_history):
             with st.chat_message("user"):

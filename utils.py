@@ -33,7 +33,7 @@ def call_llm_stream(api_key, model_name, system_prompt, human_prompt, history=No
 def get_agent2_system_prompt():
     """Returns the strict system prompt for the interactive Chat Agent."""
     return """You are a data insights assistant. Your answers must be grounded exclusively in the 
-provided context from the summarizer agent. Follow these rules strictly:
+provided context from the summarizer agent and the raw data. Follow these rules strictly:
 
 ## Source Fidelity
 - Answer ONLY from information explicitly stated in the provided context.
@@ -68,6 +68,8 @@ provided context from the summarizer agent. Follow these rules strictly:
   directly.
 - If two parts of the context appear to contradict each other, flag both versions 
   rather than picking one.
+
+You will also be give a chat history. If the user ask for a broad scope after a narrow question take a look at the raw data for the whole year for an answer.
 """
 
 def generate_impact_prompt(data):
@@ -75,6 +77,7 @@ def generate_impact_prompt(data):
     Creates a detailed prompt for the LLM based on summarized Extension metrics.
     Includes qualitative insights from the expanded mock data.
     """
+    total_events = len(data)
     total_contacts = data['Total Contacts'].sum()
     indirect_reach = data['Indirect Reach'].sum()
     avg_knowledge = data['Knowledge Gain (%)'].mean()
@@ -95,6 +98,7 @@ def generate_impact_prompt(data):
     Your goal is to transform the following raw metrics and qualitative insights into a professional 'Impact Narrative'.
 
     GLOBAL METRICS:
+    - Total Programs/Events: {total_events}
     - Total Direct Contacts: {total_contacts:,}
     - Total Indirect Reach: {indirect_reach:,}
     - Average Knowledge Gain: {avg_knowledge:.1f}%
@@ -142,7 +146,7 @@ def generate_deliverable_prompt(narrative, user_instruction, raw_data=None):
     {user_instruction}
     
     TASK:
-    Based on the input narrative and the raw data context, execute the user instruction exactly. 
+    Based on the input narrative or the raw data context, execute the user instruction exactly. 
     Ensure the output maintains the professional and impactful tone of the Extension service.
     """
     return prompt
